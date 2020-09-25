@@ -7,6 +7,18 @@ import minepy as mp
 from sklearn.model_selection import train_test_split
 
 
+def mic_score_algo(cols, x, y):
+    if len(cols) == 0:
+        return max_info_coef(x,y)
+    else:
+        denominator = 1
+        
+        for column in cols:
+            denominator = denominator * max_info_coef(column, x)
+            
+        numerator = max_info_coef(x, y)
+        
+        return numerator/denominator
 
 def proj(b, a):
     numerator = np.dot(b, a)
@@ -40,12 +52,12 @@ def norm_cols(data):
         
     return data
 
-def find_max_mic(data, y):
+def find_max_mic(cols, data, y):
     mic_arr = []
     col_arr = []
     i=0
     for column in data:
-        mic_arr.append(max_info_coef(column[0], y))
+        mic_arr.append(mic_score_algo(cols, column[0], y))
         col_arr.append(i)
         i+=1
         
@@ -63,13 +75,12 @@ def bootstrapped_mean_vectr(x):
 
 
 def main():
-    data = pd.read_csv('C:/Users/Matt/Documents/max_relevancy_min_redundancy/heart_gm.csv')
-    y = data.pop('target')
+    data = pd.read_csv('C:/Users/Matt/Documents/max_relevancy_min_redundancy/breast_cancer_data.csv')
+    y = data.pop('diagnosis')
     x = data
     
     x_train, x_test, y_train, y_test = train_test_split(x,y, test_size=0.2)
-
-        
+  
     y_train_bs_vctr = bootstrapped_mean_vectr(y_train)
     
     bs_vctrs = []
@@ -78,10 +89,25 @@ def main():
         bs_vctr = bootstrapped_mean_vectr(x_train[column])
         bs_vctrs.append(bs_vctr)
         
+    chosen_columns = []
+    chosen_vctrs = []
+    chosen_features = []
+    chosen_feature_names = []
+    chosen_mic_scores = []
     
-    col, mic = find_max_mic(bs_vctrs, y_train_bs_vctr[0])
-    print(col)
-    print(mic)
+    while len(chosen_columns) < 5:
+        col, mic = find_max_mic(chosen_vctrs, bs_vctrs, y_train_bs_vctr[0])
+        chosen_columns.append(col)
+        chosen_vctrs.append(bs_vctrs[col][0])
+        chosen_features.append(x_train[x_train.columns[col]])
+        chosen_feature_names.append(x_train.columns[col])
+        chosen_mic_scores.append(mic)
+        print(col)
+        print(mic)
+        
+    print(chosen_columns)
+    print(chosen_feature_names)
+    print(chosen_mic_scores)
     
 if __name__ == '__main__':
     main()
